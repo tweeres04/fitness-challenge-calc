@@ -56,6 +56,25 @@ const FIELD_NAMES: Record<Field, string> = {
   mobility: "Mobility",
 };
 
+const FIELD_NAMES_SHORT: Record<Field, string> = {
+  running: "Run",
+  biking: "Bike",
+  sessionHrs: "Sess",
+  heavy: "Heavy",
+  light: "Light",
+  mobility: "Mob",
+};
+
+const DAY_NAMES_SHORT: Record<string, string> = {
+  Monday: "Mon",
+  Tuesday: "Tue",
+  Wednesday: "Wed",
+  Thursday: "Thu",
+  Friday: "Fri",
+  Saturday: "Sat",
+  Sunday: "Sun",
+};
+
 const FIELD_UNITS: Record<Field, string> = {
   running: "km",
   biking: "km",
@@ -240,7 +259,7 @@ function NumberInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onFocus={selectOnFocus}
-      className="w-20 h-8 text-center"
+      className="sm:w-16 h-10 text-center max-sm:border-transparent max-sm:bg-transparent max-sm:dark:bg-transparent"
     />
   );
 }
@@ -617,13 +636,14 @@ export function WeeklyTracker() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-28">Day</TableHead>
+              <TableHead>Day</TableHead>
               {FIELDS.map((f) => (
                 <TableHead
                   key={f}
                   className={`text-center ${FIELD_GRADIENT_HEADER[f] ?? CATEGORY_STYLES[FIELD_CATEGORY[f]].headerBg}`}
                 >
-                  {fieldLabel(f)}
+                  <span className="sm:hidden">{FIELD_NAMES_SHORT[f]}</span>
+                  <span className="hidden sm:inline">{fieldLabel(f)}</span>
                 </TableHead>
               ))}
             </TableRow>
@@ -631,11 +651,14 @@ export function WeeklyTracker() {
           <TableBody>
             {DAYS.map((day) => (
               <TableRow key={day}>
-                <TableCell className="font-medium">{day}</TableCell>
+                <TableCell className="font-medium p-2">
+                  <span className="sm:hidden">{DAY_NAMES_SHORT[day]}</span>
+                  <span className="hidden sm:inline">{day}</span>
+                </TableCell>
                 {FIELDS.map((field) => (
                   <TableCell
                     key={field}
-                    className={`text-center ${FIELD_GRADIENT_BG[field] ?? CATEGORY_STYLES[FIELD_CATEGORY[field]].bg}`}
+                    className={`text-center max-sm:p-0 ${FIELD_GRADIENT_BG[field] ?? CATEGORY_STYLES[FIELD_CATEGORY[field]].bg}`}
                   >
                     <NumberInput
                       value={days[day][field]}
@@ -652,7 +675,7 @@ export function WeeklyTracker() {
               {FIELDS.map((f) => (
                 <TableCell
                   key={f}
-                  className={`text-center font-bold tabular-nums ${FIELD_GRADIENT_BG[f] ?? CATEGORY_STYLES[FIELD_CATEGORY[f]].bg}`}
+                  className={`text-center font-bold tabular-nums max-sm:p-0 ${FIELD_GRADIENT_BG[f] ?? CATEGORY_STYLES[FIELD_CATEGORY[f]].bg}`}
                 >
                   {totals[f] > 0 ? totals[f] : "—"}
                 </TableCell>
