@@ -1,5 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
 import { CircleHelp } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "~/components/ui/popover";
 import { ThemeToggle } from "~/components/theme-toggle";
 import { Button } from "~/components/ui/button";
 import {
@@ -185,23 +190,29 @@ function calcCategory(
   return { name, fields: items, categoryFields: fields, total, remaining };
 }
 
+// How many more units of a field can be suggested, given what's already tracked
+function fieldHeadroom(field: Field, totals: Record<Field, number>): number {
+  return Math.max(FIELD_MAX[field] - totals[field], 0);
+}
+
 // Calculate the primary field value from remaining points minus secondary inputs.
 // First field is always the primary (auto-calculated), rest are secondary (user-editable).
 function calcPrimaryValue(
   remaining: number,
   primaryField: Field,
   secondaryValues: Record<string, string>,
-  fields: Field[]
+  fields: Field[],
+  totals: Record<Field, number>
 ): number {
   const secondaryPoints = fields
     .filter((f) => f !== primaryField)
     .reduce((sum, f) => {
-      const val = Math.min(parseFloat(secondaryValues[f]) || 0, FIELD_MAX[f]);
+      const val = Math.min(parseFloat(secondaryValues[f]) || 0, fieldHeadroom(f, totals));
       return sum + val * RATES[f];
     }, 0);
 
   const pointsLeft = Math.max(remaining - secondaryPoints, 0);
-  const raw = Math.min(pointsLeft / RATES[primaryField], FIELD_MAX[primaryField]);
+  const raw = Math.min(pointsLeft / RATES[primaryField], fieldHeadroom(primaryField, totals));
   return INTEGER_FIELDS.has(primaryField)
     ? Math.ceil(raw)
     : Math.round(raw * 100) / 100;
@@ -210,6 +221,7 @@ function calcPrimaryValue(
 function selectOnFocus(e: React.FocusEvent<HTMLInputElement>) {
   e.target.select();
 }
+
 
 function NumberInput({
   value,
@@ -226,7 +238,7 @@ function NumberInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onFocus={selectOnFocus}
-      className="w-20 text-center h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+      className="w-20 h-8 text-center"
     />
   );
 }
@@ -234,17 +246,19 @@ function NumberInput({
 function SuggestionBlock({
   fields,
   remaining,
+  totals,
 }: {
   fields: Field[];
   remaining: number;
+  totals: Record<Field, number>;
 }) {
   const primaryField = fields[0];
   const secondaryFields = fields.slice(1);
   const [secondaryValues, setSecondaryValues] = useState<Record<string, string>>({});
 
   const primaryValue = useMemo(
-    () => calcPrimaryValue(remaining, primaryField, secondaryValues, fields),
-    [remaining, primaryField, secondaryValues, fields]
+    () => calcPrimaryValue(remaining, primaryField, secondaryValues, fields, totals),
+    [remaining, primaryField, secondaryValues, fields, totals]
   );
 
   return (
@@ -266,7 +280,9 @@ function SuggestionBlock({
         </span>
       </div>
       {secondaryFields.map((f) => {
-        const val = parseFloat(secondaryValues[f]) || 0;
+        const headroom = fieldHeadroom(f, totals);
+        const maxedOut = headroom <= 0;
+        const val = Math.min(parseFloat(secondaryValues[f]) || 0, headroom);
         const pts = val * RATES[f];
         return (
           <div key={f} className="flex items-center gap-2 text-sm">
@@ -276,17 +292,35 @@ function SuggestionBlock({
                 <span className="block text-xs text-foreground/50">{FIELD_UNITS[f]}</span>
               )}
             </span>
-            <Input
-              type="number"
-              min="0"
-              step="any"
-              value={secondaryValues[f] ?? ""}
-              onChange={(e) =>
-                setSecondaryValues((prev) => ({ ...prev, [f]: e.target.value }))
-              }
-              onFocus={selectOnFocus}
-              className="w-20 text-center h-7 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            />
+            {maxedOut ? (
+              <Popover>
+                <PopoverTrigger className="w-20 text-center tabular-nums h-7 flex items-center justify-center text-foreground/50 cursor-help">
+                  0
+                </PopoverTrigger>
+                <PopoverContent side="top" className="w-auto px-3 py-2 text-xs">
+                  Already at max ({FIELD_MAX[f]} {FIELD_UNITS[f] || "reps"})
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <Input
+                type="number"
+                min="0"
+                max={headroom}
+                step="any"
+                value={secondaryValues[f] ?? ""}
+                onChange={(e) =>
+                  setSecondaryValues((prev) => ({ ...prev, [f]: e.target.value }))
+                }
+                onBlur={(e) => {
+                  const v = parseFloat(e.target.value);
+                  if (v > headroom) {
+                    setSecondaryValues((prev) => ({ ...prev, [f]: String(headroom) }));
+                  }
+                }}
+                onFocus={selectOnFocus}
+                className="w-20 h-7 text-sm text-center"
+              />
+            )}
             <span className="w-16 text-right text-xs tabular-nums text-foreground/50">
               {pts > 0 ? `${pts.toFixed(1)} pts` : ""}
             </span>
@@ -300,9 +334,11 @@ function SuggestionBlock({
 function CategoryCard({
   calc,
   color,
+  totals,
 }: {
   calc: CategoryCalc;
   color: CategoryColor;
+  totals: Record<Field, number>;
 }) {
   const pct = (calc.total / MAX_CATEGORY_POINTS) * 100;
 
@@ -349,6 +385,7 @@ function CategoryCard({
               <SuggestionBlock
                 fields={calc.categoryFields}
                 remaining={calc.remaining}
+                totals={totals}
               />
             ) : (
               <div className="flex items-center gap-2 text-sm">
@@ -379,6 +416,21 @@ function CategoryCard({
   );
 }
 
+const CATEGORIES: { name: string; color: CategoryColor; fields: Field[] }[] = [
+  { name: "Cardio", color: "cardio", fields: ["running", "biking", "sessionHrs"] },
+  { name: "Strength", color: "strength", fields: ["heavy", "light"] },
+  { name: "Mobility", color: "mobility", fields: ["mobility"] },
+];
+
+function fieldRuleLabel(f: Field): string {
+  const unit = FIELD_UNITS[f] || "rep";
+  const rate = `${RATES[f]} pts/${unit}`;
+  const max = FIELD_MAX[f];
+  if (max === Infinity) return `${FIELD_NAMES[f]}: ${rate}`;
+  const maxPts = max * RATES[f];
+  return `${FIELD_NAMES[f]}: ${rate} (max ${max} ${unit}${max !== 1 ? "s" : ""}, ${maxPts} pts)`;
+}
+
 function RulesDialog() {
   return (
     <Dialog>
@@ -396,36 +448,23 @@ function RulesDialog() {
         </DialogHeader>
         <div className="space-y-4 text-sm">
           <p>
-            Each week you can earn up to <strong>60 points</strong> across three
-            categories, each worth a maximum of <strong>20 points</strong>.
+            Each week you can earn up to <strong>{MAX_CATEGORY_POINTS * CATEGORIES.length} points</strong> across {CATEGORIES.length} categories,
+            each worth a maximum of <strong>{MAX_CATEGORY_POINTS} points</strong>.
           </p>
 
-          <div>
-            <h3 className="font-semibold mb-1">Cardio (20 pts max)</h3>
-            <ul className="space-y-0.5 ml-4 list-disc">
-              <li>Running: 2 pts/km</li>
-              <li>Biking: 0.25 pts/km (max 40 km, 10 pts)</li>
-              <li>Session: 2 pts/hr (max 2 hrs, 4 pts)</li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-semibold mb-1">Strength (20 pts max)</h3>
-            <ul className="space-y-0.5 ml-4 list-disc">
-              <li>Heavy reps: 0.1 pts/rep</li>
-              <li>Light reps: 0.05 pts/rep (max 200 reps, 10 pts)</li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-semibold mb-1">Mobility (20 pts max)</h3>
-            <ul className="space-y-0.5 ml-4 list-disc">
-              <li>Minutes: 0.25 pts/min</li>
-            </ul>
-          </div>
+          {CATEGORIES.map((cat) => (
+            <div key={cat.name}>
+              <h3 className="font-semibold mb-1">{cat.name} ({MAX_CATEGORY_POINTS} pts max)</h3>
+              <ul className="space-y-0.5 ml-4 list-disc">
+                {cat.fields.map((f) => (
+                  <li key={f}>{fieldRuleLabel(f)}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
 
           <p>
-            Hit all 60 points in a week to earn a <strong>max week bonus
+            Hit all {MAX_CATEGORY_POINTS * CATEGORIES.length} points in a week to earn a <strong>max week bonus
             ticket</strong> for the prize draw.
           </p>
         </div>
@@ -568,9 +607,9 @@ export function WeeklyTracker() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <CategoryCard calc={cardio} color="cardio" />
-        <CategoryCard calc={strength} color="strength" />
-        <CategoryCard calc={mobility} color="mobility" />
+        <CategoryCard calc={cardio} color="cardio" totals={totals} />
+        <CategoryCard calc={strength} color="strength" totals={totals} />
+        <CategoryCard calc={mobility} color="mobility" totals={totals} />
       </div>
     </div>
   );
