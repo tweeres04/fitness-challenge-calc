@@ -3,6 +3,7 @@
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant light (&:is(.light *));
 
 @theme {
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif,
@@ -11,21 +12,20 @@
   /* Category colors — aliased from Tailwind's built-in palette */
   --color-cardio-50: var(--color-emerald-50);
   --color-cardio-500: var(--color-emerald-500);
+  --color-cardio-950: var(--color-emerald-950);
 
   --color-strength-50: var(--color-blue-50);
   --color-strength-500: var(--color-blue-500);
+  --color-strength-950: var(--color-blue-950);
 
   --color-mobility-50: var(--color-rose-50);
   --color-mobility-500: var(--color-rose-500);
+  --color-mobility-950: var(--color-rose-950);
 }
 
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
-
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
-  }
+  @apply bg-background text-foreground;
 }
 
 @theme inline {

@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { LockOpen, Lock } from "lucide-react";
+import { ThemeToggle } from "~/components/theme-toggle";
 import {
   Popover,
   PopoverContent,
@@ -80,24 +81,21 @@ const CATEGORY_STYLES: Record<
   { bg: string; bar: string; headerBg: string; dot: string }
 > = {
   cardio: {
-    bg: "bg-cardio-50/30",
+    bg: "bg-cardio-50/30 dark:bg-cardio-950/30",
     bar: "bg-cardio-500",
-    headerBg: "bg-cardio-50",
-
+    headerBg: "bg-cardio-50 dark:bg-cardio-950",
     dot: "bg-cardio-500",
   },
   strength: {
-    bg: "bg-strength-50/30",
+    bg: "bg-strength-50/30 dark:bg-strength-950/30",
     bar: "bg-strength-500",
-    headerBg: "bg-strength-50",
-
+    headerBg: "bg-strength-50 dark:bg-strength-950",
     dot: "bg-strength-500",
   },
   mobility: {
-    bg: "bg-mobility-50/30",
+    bg: "bg-mobility-50/30 dark:bg-mobility-950/30",
     bar: "bg-mobility-500",
-    headerBg: "bg-mobility-50",
-
+    headerBg: "bg-mobility-50 dark:bg-mobility-950",
     dot: "bg-mobility-500",
   },
 };
@@ -379,7 +377,7 @@ function CategoryCard({
 
         {calc.remaining === 0 && (
           <div className="border-t pt-3">
-            <p className="text-sm font-medium text-green-600">Maxed out!</p>
+            <p className="text-sm font-medium text-green-600 dark:text-green-400">Maxed out!</p>
           </div>
         )}
       </CardContent>
@@ -462,9 +460,12 @@ export function WeeklyTracker() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Weekly calculator</h1>
-        <Button variant="outline" size="sm" onClick={clearAll}>
-          Clear all
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button variant="outline" size="sm" onClick={clearAll}>
+            Clear all
+          </Button>
+        </div>
       </div>
       <div className="overflow-x-auto rounded-lg border">
         <Table>
