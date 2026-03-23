@@ -57,9 +57,9 @@ export function ThemeToggle() {
   const label = theme === "light" ? "Light" : theme === "dark" ? "Dark" : "System";
 
   return (
-    <Button variant="ghost" size="sm" onClick={cycle}>
+    <Button variant="ghost" onClick={cycle}>
       <Icon className="size-4" />
-      {label}
+      <span className="hidden sm:inline">{label}</span>
     </Button>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { CircleHelp } from "lucide-react";
+import { CircleHelp, Trash2 } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -24,12 +24,7 @@ import {
   TableRow,
   TableFooter,
 } from "~/components/ui/table";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 
 const DAYS = [
   "Monday",
@@ -71,7 +66,9 @@ const FIELD_UNITS: Record<Field, string> = {
 };
 
 function fieldLabel(f: Field): string {
-  return FIELD_UNITS[f] ? `${FIELD_NAMES[f]} (${FIELD_UNITS[f]})` : FIELD_NAMES[f];
+  return FIELD_UNITS[f]
+    ? `${FIELD_NAMES[f]} (${FIELD_UNITS[f]})`
+    : FIELD_NAMES[f];
 }
 
 type DayData = Record<Field, string>;
@@ -168,7 +165,7 @@ type CategoryCalc = {
 function calcCategory(
   totals: Record<Field, number>,
   name: string,
-  fields: Field[]
+  fields: Field[],
 ): CategoryCalc {
   const items = fields.map((field) => {
     const clamped = Math.min(totals[field], FIELD_MAX[field]);
@@ -182,7 +179,7 @@ function calcCategory(
 
   const rawTotal = fields.reduce(
     (sum, f) => sum + Math.min(totals[f], FIELD_MAX[f]) * RATES[f],
-    0
+    0,
   );
   const total = Math.min(rawTotal, MAX_CATEGORY_POINTS);
   const remaining = Math.max(MAX_CATEGORY_POINTS - total, 0);
@@ -202,17 +199,23 @@ function calcPrimaryValue(
   primaryField: Field,
   secondaryValues: Record<string, string>,
   fields: Field[],
-  totals: Record<Field, number>
+  totals: Record<Field, number>,
 ): number {
   const secondaryPoints = fields
     .filter((f) => f !== primaryField)
     .reduce((sum, f) => {
-      const val = Math.min(parseFloat(secondaryValues[f]) || 0, fieldHeadroom(f, totals));
+      const val = Math.min(
+        parseFloat(secondaryValues[f]) || 0,
+        fieldHeadroom(f, totals),
+      );
       return sum + val * RATES[f];
     }, 0);
 
   const pointsLeft = Math.max(remaining - secondaryPoints, 0);
-  const raw = Math.min(pointsLeft / RATES[primaryField], fieldHeadroom(primaryField, totals));
+  const raw = Math.min(
+    pointsLeft / RATES[primaryField],
+    fieldHeadroom(primaryField, totals),
+  );
   return INTEGER_FIELDS.has(primaryField)
     ? Math.ceil(raw)
     : Math.round(raw * 100) / 100;
@@ -221,7 +224,6 @@ function calcPrimaryValue(
 function selectOnFocus(e: React.FocusEvent<HTMLInputElement>) {
   e.target.select();
 }
-
 
 function NumberInput({
   value,
@@ -254,11 +256,21 @@ function SuggestionBlock({
 }) {
   const primaryField = fields[0];
   const secondaryFields = fields.slice(1);
-  const [secondaryValues, setSecondaryValues] = useState<Record<string, string>>({});
+  const [secondaryValues, setSecondaryValues] = useState<
+    Record<string, string>
+  >({});
+  const [clampedField, setClampedField] = useState<Field | null>(null);
 
   const primaryValue = useMemo(
-    () => calcPrimaryValue(remaining, primaryField, secondaryValues, fields, totals),
-    [remaining, primaryField, secondaryValues, fields, totals]
+    () =>
+      calcPrimaryValue(
+        remaining,
+        primaryField,
+        secondaryValues,
+        fields,
+        totals,
+      ),
+    [remaining, primaryField, secondaryValues, fields, totals],
   );
 
   return (
@@ -267,7 +279,9 @@ function SuggestionBlock({
         <span className="flex-1">
           {FIELD_NAMES[primaryField]}
           {FIELD_UNITS[primaryField] && (
-            <span className="block text-xs text-foreground/50">{FIELD_UNITS[primaryField]}</span>
+            <span className="block text-xs text-foreground/50">
+              {FIELD_UNITS[primaryField]}
+            </span>
           )}
         </span>
         <span className="w-20 text-center tabular-nums h-7 flex items-center justify-center">
@@ -289,7 +303,9 @@ function SuggestionBlock({
             <span className="flex-1">
               {FIELD_NAMES[f]}
               {FIELD_UNITS[f] && (
-                <span className="block text-xs text-foreground/50">{FIELD_UNITS[f]}</span>
+                <span className="block text-xs text-foreground/50">
+                  {FIELD_UNITS[f]}
+                </span>
               )}
             </span>
             {maxedOut ? (
@@ -302,24 +318,47 @@ function SuggestionBlock({
                 </PopoverContent>
               </Popover>
             ) : (
-              <Input
-                type="number"
-                min="0"
-                max={headroom}
-                step="any"
-                value={secondaryValues[f] ?? ""}
-                onChange={(e) =>
-                  setSecondaryValues((prev) => ({ ...prev, [f]: e.target.value }))
-                }
-                onBlur={(e) => {
-                  const v = parseFloat(e.target.value);
-                  if (v > headroom) {
-                    setSecondaryValues((prev) => ({ ...prev, [f]: String(headroom) }));
-                  }
+              <Popover
+                open={clampedField === f}
+                onOpenChange={(open) => {
+                  if (!open) setClampedField(null);
                 }}
-                onFocus={selectOnFocus}
-                className="w-20 h-7 text-sm text-center"
-              />
+              >
+                <PopoverTrigger
+                  render={
+                    <Input
+                      type="number"
+                      min="0"
+                      max={headroom}
+                      step="any"
+                      value={secondaryValues[f] ?? ""}
+                      onChange={(e) =>
+                        setSecondaryValues((prev) => ({
+                          ...prev,
+                          [f]: e.target.value,
+                        }))
+                      }
+                      onBlur={(e) => {
+                        const v = parseFloat(e.target.value);
+                        if (v > headroom) {
+                          setSecondaryValues((prev) => ({
+                            ...prev,
+                            [f]: String(headroom),
+                          }));
+                          setTimeout(() => setClampedField(f), 100);
+                        }
+                      }}
+                      onFocus={selectOnFocus}
+                      className="w-20 h-7 text-sm text-center"
+                    />
+                  }
+                />
+                <PopoverContent side="top" className="w-auto px-3 py-2 text-xs">
+                  Clamped to {headroom}{" "}
+                  {FIELD_UNITS[f] || (headroom === 1 ? "rep" : "reps")}{" "}
+                  remaining
+                </PopoverContent>
+              </Popover>
             )}
             <span className="w-16 text-right text-xs tabular-nums text-foreground/50">
               {pts > 0 ? `${pts.toFixed(1)} pts` : ""}
@@ -347,7 +386,9 @@ function CategoryCard({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className={`size-2.5 rounded-full ${CATEGORY_STYLES[color].dot}`} />
+            <span
+              className={`size-2.5 rounded-full ${CATEGORY_STYLES[color].dot}`}
+            />
             <CardTitle className="text-base">{calc.name}</CardTitle>
           </div>
           <span className="text-sm font-medium tabular-nums">
@@ -392,11 +433,15 @@ function CategoryCard({
                 <span className="flex-1">
                   {FIELD_NAMES[calc.categoryFields[0]]}
                   {FIELD_UNITS[calc.categoryFields[0]] && (
-                    <span className="block text-xs text-foreground/50">{FIELD_UNITS[calc.categoryFields[0]]}</span>
+                    <span className="block text-xs text-foreground/50">
+                      {FIELD_UNITS[calc.categoryFields[0]]}
+                    </span>
                   )}
                 </span>
                 <span className="w-20 text-center tabular-nums h-7 flex items-center justify-center">
-                  {Math.round((calc.remaining / RATES[calc.categoryFields[0]]) * 100) / 100}
+                  {Math.round(
+                    (calc.remaining / RATES[calc.categoryFields[0]]) * 100,
+                  ) / 100}
                 </span>
                 <span className="w-16 text-right text-xs tabular-nums text-foreground/50">
                   {calc.remaining.toFixed(1)} pts
@@ -408,7 +453,9 @@ function CategoryCard({
 
         {calc.remaining === 0 && (
           <div className="border-t pt-3">
-            <p className="text-sm font-medium text-green-600 dark:text-green-400">Maxed out!</p>
+            <p className="text-sm font-medium text-green-600 dark:text-green-400">
+              Maxed out!
+            </p>
           </div>
         )}
       </CardContent>
@@ -417,7 +464,11 @@ function CategoryCard({
 }
 
 const CATEGORIES: { name: string; color: CategoryColor; fields: Field[] }[] = [
-  { name: "Cardio", color: "cardio", fields: ["running", "biking", "sessionHrs"] },
+  {
+    name: "Cardio",
+    color: "cardio",
+    fields: ["running", "biking", "sessionHrs"],
+  },
   { name: "Strength", color: "strength", fields: ["heavy", "light"] },
   { name: "Mobility", color: "mobility", fields: ["mobility"] },
 ];
@@ -436,9 +487,9 @@ function RulesDialog() {
     <Dialog>
       <DialogTrigger
         render={
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost">
             <CircleHelp className="size-4" />
-            Rules
+            <span className="hidden sm:inline">Rules</span>
           </Button>
         }
       />
@@ -448,13 +499,17 @@ function RulesDialog() {
         </DialogHeader>
         <div className="space-y-4 text-sm">
           <p>
-            Each week you can earn up to <strong>{MAX_CATEGORY_POINTS * CATEGORIES.length} points</strong> across {CATEGORIES.length} categories,
-            each worth a maximum of <strong>{MAX_CATEGORY_POINTS} points</strong>.
+            Each week you can earn up to{" "}
+            <strong>{MAX_CATEGORY_POINTS * CATEGORIES.length} points</strong>{" "}
+            across {CATEGORIES.length} categories, each worth a maximum of{" "}
+            <strong>{MAX_CATEGORY_POINTS} points</strong>.
           </p>
 
           {CATEGORIES.map((cat) => (
             <div key={cat.name}>
-              <h3 className="font-semibold mb-1">{cat.name} ({MAX_CATEGORY_POINTS} pts max)</h3>
+              <h3 className="font-semibold mb-1">
+                {cat.name} ({MAX_CATEGORY_POINTS} pts max)
+              </h3>
               <ul className="space-y-0.5 ml-4 list-disc">
                 {cat.fields.map((f) => (
                   <li key={f}>{fieldRuleLabel(f)}</li>
@@ -464,8 +519,8 @@ function RulesDialog() {
           ))}
 
           <p>
-            Hit all {MAX_CATEGORY_POINTS * CATEGORIES.length} points in a week to earn a <strong>max week bonus
-            ticket</strong> for the prize draw.
+            Hit all {MAX_CATEGORY_POINTS * CATEGORIES.length} points in a week
+            to earn a <strong>max week bonus ticket</strong> for the prize draw.
           </p>
         </div>
       </DialogContent>
@@ -529,17 +584,16 @@ export function WeeklyTracker() {
   }, [days]);
 
   const cardio = useMemo(
-    () =>
-      calcCategory(totals, "Cardio", ["running", "biking", "sessionHrs"]),
-    [totals]
+    () => calcCategory(totals, "Cardio", ["running", "biking", "sessionHrs"]),
+    [totals],
   );
   const strength = useMemo(
     () => calcCategory(totals, "Strength", ["heavy", "light"]),
-    [totals]
+    [totals],
   );
   const mobility = useMemo(
     () => calcCategory(totals, "Mobility", ["mobility"]),
-    [totals]
+    [totals],
   );
 
   const totalPoints = cardio.total + strength.total + mobility.total;
@@ -551,8 +605,9 @@ export function WeeklyTracker() {
         <div className="flex items-center gap-2">
           <RulesDialog />
           <ThemeToggle />
-          <Button variant="outline" size="sm" onClick={clearAll}>
-            Clear all
+          <Button variant="outline" onClick={clearAll}>
+            <Trash2 className="size-4" />
+            <span className="hidden sm:inline">Clear all</span>
           </Button>
         </div>
       </div>
@@ -576,7 +631,10 @@ export function WeeklyTracker() {
               <TableRow key={day}>
                 <TableCell className="font-medium">{day}</TableCell>
                 {FIELDS.map((field) => (
-                  <TableCell key={field} className={`text-center ${FIELD_GRADIENT_BG[field] ?? CATEGORY_STYLES[FIELD_CATEGORY[field]].bg}`}>
+                  <TableCell
+                    key={field}
+                    className={`text-center ${FIELD_GRADIENT_BG[field] ?? CATEGORY_STYLES[FIELD_CATEGORY[field]].bg}`}
+                  >
                     <NumberInput
                       value={days[day][field]}
                       onChange={(v) => updateDay(day, field, v)}
@@ -590,7 +648,10 @@ export function WeeklyTracker() {
             <TableRow>
               <TableCell className="font-bold">Total</TableCell>
               {FIELDS.map((f) => (
-                <TableCell key={f} className={`text-center font-bold tabular-nums ${FIELD_GRADIENT_BG[f] ?? CATEGORY_STYLES[FIELD_CATEGORY[f]].bg}`}>
+                <TableCell
+                  key={f}
+                  className={`text-center font-bold tabular-nums ${FIELD_GRADIENT_BG[f] ?? CATEGORY_STYLES[FIELD_CATEGORY[f]].bg}`}
+                >
                   {totals[f] > 0 ? totals[f] : "—"}
                 </TableCell>
               ))}
