@@ -1,6 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
+import { CircleHelp } from "lucide-react";
 import { ThemeToggle } from "~/components/theme-toggle";
 import { Button } from "~/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import {
   Table,
@@ -354,6 +362,61 @@ function CategoryCard({
   );
 }
 
+function RulesDialog() {
+  return (
+    <Dialog>
+      <DialogTrigger
+        render={
+          <Button variant="ghost" size="sm">
+            <CircleHelp className="size-4" />
+            Rules
+          </Button>
+        }
+      />
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Scoring rules</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 text-sm">
+          <p>
+            Each week you can earn up to <strong>60 points</strong> across three
+            categories, each worth a maximum of <strong>20 points</strong>.
+          </p>
+
+          <div>
+            <h3 className="font-semibold mb-1">Cardio (20 pts max)</h3>
+            <ul className="space-y-0.5 ml-4 list-disc">
+              <li>Running: 2 pts/km</li>
+              <li>Biking: 0.25 pts/km (max 40 km, 10 pts)</li>
+              <li>Session: 2 pts/hr (max 2 hrs, 4 pts)</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-1">Strength (20 pts max)</h3>
+            <ul className="space-y-0.5 ml-4 list-disc">
+              <li>Heavy reps: 0.1 pts/rep</li>
+              <li>Light reps: 0.05 pts/rep (max 200 reps, 10 pts)</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-1">Mobility (20 pts max)</h3>
+            <ul className="space-y-0.5 ml-4 list-disc">
+              <li>Minutes: 0.25 pts/min</li>
+            </ul>
+          </div>
+
+          <p>
+            Hit all 60 points in a week to earn a <strong>max week bonus
+            ticket</strong> for the prize draw.
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 const STORAGE_KEY = "conrad-weekly-tracker";
 
 function loadDays(): Record<string, DayData> {
@@ -430,6 +493,7 @@ export function WeeklyTracker() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Weekly calculator</h1>
         <div className="flex items-center gap-2">
+          <RulesDialog />
           <ThemeToggle />
           <Button variant="outline" size="sm" onClick={clearAll}>
             Clear all
