@@ -1,11 +1,5 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { LockOpen, Lock } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
 import { ThemeToggle } from "~/components/theme-toggle";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "~/components/ui/popover";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import {
@@ -45,14 +39,27 @@ const FIELDS = [
 
 type Field = (typeof FIELDS)[number];
 
-const FIELD_LABELS: Record<Field, string> = {
-  running: "Running (km)",
-  biking: "Biking (km)",
-  sessionHrs: "Session (hrs)",
+const FIELD_NAMES: Record<Field, string> = {
+  running: "Running",
+  biking: "Biking",
+  sessionHrs: "Session",
   heavy: "Heavy reps",
   light: "Light reps",
-  mobility: "Mobility (min)",
+  mobility: "Mobility",
 };
+
+const FIELD_UNITS: Record<Field, string> = {
+  running: "km",
+  biking: "km",
+  sessionHrs: "hrs",
+  heavy: "",
+  light: "",
+  mobility: "min",
+};
+
+function fieldLabel(f: Field): string {
+  return FIELD_UNITS[f] ? `${FIELD_NAMES[f]} (${FIELD_UNITS[f]})` : FIELD_NAMES[f];
+}
 
 type DayData = Record<Field, string>;
 
@@ -125,7 +132,7 @@ function calcCategory(
 ): CategoryCalc {
   const items = fields.map((field) => ({
     field,
-    label: FIELD_LABELS[field],
+    label: fieldLabel(field),
     value: totals[field],
     points: Math.min(totals[field] * RATES[field], MAX_CATEGORY_POINTS),
   }));
@@ -137,46 +144,23 @@ function calcCategory(
   return { name, fields: items, categoryFields: fields, total, remaining };
 }
 
-// Distribute remaining points proportionally across unlocked fields by rate.
-function distributeSuggestions(
+// Calculate the primary field value from remaining points minus secondary inputs.
+// First field is always the primary (auto-calculated), rest are secondary (user-editable).
+function calcPrimaryValue(
   remaining: number,
-  fields: Field[],
-  lockedSet: Set<Field>,
-  values: Record<string, string>
-): Record<Field, number> {
-  const result: Record<string, number> = {};
+  primaryField: Field,
+  secondaryValues: Record<string, string>,
+  fields: Field[]
+): number {
+  const secondaryPoints = fields
+    .filter((f) => f !== primaryField)
+    .reduce((sum, f) => sum + (parseFloat(secondaryValues[f]) || 0) * RATES[f], 0);
 
-  let lockedPoints = 0;
-  const unlockedFields: Field[] = [];
-
-  for (const f of fields) {
-    if (lockedSet.has(f)) {
-      const val = parseFloat(values[f]) || 0;
-      result[f] = val;
-      lockedPoints += val * RATES[f];
-    } else {
-      unlockedFields.push(f);
-    }
-  }
-
-  const pointsLeft = Math.max(remaining - lockedPoints, 0);
-
-  if (unlockedFields.length === 0 || pointsLeft === 0) {
-    for (const f of unlockedFields) result[f] = 0;
-    return result as Record<Field, number>;
-  }
-
-  const totalWeight = unlockedFields.reduce((sum, f) => sum + RATES[f], 0);
-  for (const f of unlockedFields) {
-    const share = (RATES[f] / totalWeight) * pointsLeft;
-    const raw = share / RATES[f];
-    // Ceil integer fields so suggestions always meet the remaining points
-    result[f] = INTEGER_FIELDS.has(f)
-      ? Math.ceil(raw)
-      : Math.round(raw * 100) / 100;
-  }
-
-  return result as Record<Field, number>;
+  const pointsLeft = Math.max(remaining - secondaryPoints, 0);
+  const raw = pointsLeft / RATES[primaryField];
+  return INTEGER_FIELDS.has(primaryField)
+    ? Math.ceil(raw)
+    : Math.round(raw * 100) / 100;
 }
 
 function selectOnFocus(e: React.FocusEvent<HTMLInputElement>) {
@@ -210,97 +194,58 @@ function SuggestionBlock({
   fields: Field[];
   remaining: number;
 }) {
-  const [lockedSet, setLockedSet] = useState<Set<Field>>(new Set());
-  const [values, setValues] = useState<Record<string, string>>({});
+  const primaryField = fields[0];
+  const secondaryFields = fields.slice(1);
+  const [secondaryValues, setSecondaryValues] = useState<Record<string, string>>({});
 
-  const suggested = useMemo(
-    () => distributeSuggestions(remaining, fields, lockedSet, values),
-    [remaining, fields, lockedSet, values]
+  const primaryValue = useMemo(
+    () => calcPrimaryValue(remaining, primaryField, secondaryValues, fields),
+    [remaining, primaryField, secondaryValues, fields]
   );
 
-  function toggleLock(field: Field) {
-    setLockedSet((prev) => {
-      const next = new Set(prev);
-      if (next.has(field)) {
-        next.delete(field);
-      } else {
-        // Always lock to the current displayed value (suggested or manual)
-        setValues((v) => ({ ...v, [field]: String(suggested[field]) }));
-        next.add(field);
-      }
-      return next;
-    });
-  }
-
-  function handleChange(field: Field, value: string) {
-    setValues((prev) => ({ ...prev, [field]: value }));
-    // Auto-lock when user types
-    setLockedSet((prev) => {
-      if (prev.has(field)) return prev;
-      const next = new Set(prev);
-      next.add(field);
-      return next;
-    });
-  }
-
-  const unlockedCount = fields.filter((f) => !lockedSet.has(f)).length;
-
   return (
-    <div className="space-y-1">
-      {fields.map((f) => {
-        const isLocked = lockedSet.has(f);
-        const isLastUnlocked = !isLocked && unlockedCount === 1;
-        const displayValue = isLocked
-          ? values[f] ?? ""
-          : suggested[f] > 0
-            ? String(suggested[f])
-            : "";
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 text-sm">
+        <span className="flex-1">
+          {FIELD_NAMES[primaryField]}
+          {FIELD_UNITS[primaryField] && (
+            <span className="block text-xs text-foreground/50">{FIELD_UNITS[primaryField]}</span>
+          )}
+        </span>
+        <span className="w-20 text-center tabular-nums h-7 flex items-center justify-center">
+          {primaryValue > 0 ? primaryValue : "—"}
+        </span>
+        <span className="w-16 text-right text-xs tabular-nums text-foreground/50">
+          {primaryValue > 0
+            ? `${(primaryValue * RATES[primaryField]).toFixed(1)} pts`
+            : ""}
+        </span>
+      </div>
+      {secondaryFields.map((f) => {
+        const val = parseFloat(secondaryValues[f]) || 0;
+        const pts = val * RATES[f];
         return (
           <div key={f} className="flex items-center gap-2 text-sm">
             <span className="flex-1">
-              {FIELD_LABELS[f]}
+              {FIELD_NAMES[f]}
+              {FIELD_UNITS[f] && (
+                <span className="block text-xs text-foreground/50">{FIELD_UNITS[f]}</span>
+              )}
             </span>
             <Input
               type="number"
               min="0"
               step="any"
-              readOnly={isLastUnlocked}
-              value={displayValue}
-              onChange={(e) => handleChange(f, e.target.value)}
+              value={secondaryValues[f] ?? ""}
+              onChange={(e) =>
+                setSecondaryValues((prev) => ({ ...prev, [f]: e.target.value }))
+              }
               onFocus={selectOnFocus}
-              className={`w-20 text-center h-7 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-                isLastUnlocked ? "bg-muted" : ""
-              }`}
+              className="w-20 text-center h-7 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
-            {isLastUnlocked ? (
-              <Popover>
-                <PopoverTrigger
-                  className="p-1 rounded-sm text-foreground/40 hover:text-foreground transition-colors"
-                >
-                  <LockOpen className="size-3.5" />
-                </PopoverTrigger>
-                <PopoverContent side="top" className="w-auto px-3 py-2 text-xs">
-                  Last field can't be locked
-                </PopoverContent>
-              </Popover>
-            ) : (
-              <button
-                type="button"
-                onClick={() => toggleLock(f)}
-                className={`p-1 rounded-sm transition-colors ${
-                  isLocked
-                    ? "text-primary"
-                    : "text-foreground/40 hover:text-foreground"
-                }`}
-                title={isLocked ? "Unlock" : "Lock"}
-              >
-                {isLocked ? (
-                  <Lock className="size-3.5" />
-                ) : (
-                  <LockOpen className="size-3.5" />
-                )}
-              </button>
-            )}
+            <span className="w-16 text-right text-xs tabular-nums text-foreground/50">
+              {pts > 0 ? `${pts.toFixed(1)} pts` : ""}
+            </span>
           </div>
         );
       })}
@@ -364,12 +309,17 @@ function CategoryCard({
             ) : (
               <div className="flex items-center gap-2 text-sm">
                 <span className="flex-1">
-                  {FIELD_LABELS[calc.categoryFields[0]]}
+                  {FIELD_NAMES[calc.categoryFields[0]]}
+                  {FIELD_UNITS[calc.categoryFields[0]] && (
+                    <span className="block text-xs text-foreground/50">{FIELD_UNITS[calc.categoryFields[0]]}</span>
+                  )}
                 </span>
-                <span className="w-20 text-center tabular-nums">
+                <span className="w-20 text-center tabular-nums h-7 flex items-center justify-center">
                   {Math.round((calc.remaining / RATES[calc.categoryFields[0]]) * 100) / 100}
                 </span>
-                <span className="p-1 size-3.5" />
+                <span className="w-16 text-right text-xs tabular-nums text-foreground/50">
+                  {calc.remaining.toFixed(1)} pts
+                </span>
               </div>
             )}
           </div>
@@ -423,9 +373,9 @@ export function WeeklyTracker() {
     }));
   }
 
-  const clearAll = useCallback(() => {
+  function clearAll() {
     setDays(emptyWeek());
-  }, []);
+  }
 
   const totals = useMemo(() => {
     const sums = Object.fromEntries(FIELDS.map((f) => [f, 0])) as Record<
@@ -477,7 +427,7 @@ export function WeeklyTracker() {
                   key={f}
                   className={`text-center ${CATEGORY_STYLES[FIELD_CATEGORY[f]].headerBg}`}
                 >
-                  {FIELD_LABELS[f]}
+                  {fieldLabel(f)}
                 </TableHead>
               ))}
             </TableRow>
