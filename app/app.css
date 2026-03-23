@@ -18,9 +18,9 @@
   --color-strength-500: var(--color-blue-500);
   --color-strength-950: var(--color-blue-950);
 
-  --color-mobility-50: var(--color-rose-50);
-  --color-mobility-500: var(--color-rose-500);
-  --color-mobility-950: var(--color-rose-950);
+  --color-mobility-50: var(--color-purple-50);
+  --color-mobility-500: var(--color-purple-500);
+  --color-mobility-950: var(--color-purple-950);
 }
 
 html,
