@@ -148,6 +148,7 @@ body {
     @apply bg-background text-foreground;
   }
   html {
+    font-size: 18px;
     @apply font-sans;
   }
 }

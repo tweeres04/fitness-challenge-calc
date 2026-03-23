@@ -370,7 +370,7 @@ function SuggestionBlock({
                         }
                       }}
                       onFocus={selectOnFocus}
-                      className="w-20 h-7 text-sm text-center"
+                      className="w-20 text-sm text-center"
                     />
                   }
                 />
@@ -633,7 +633,7 @@ export function WeeklyTracker() {
         </div>
       </div>
       <div className="overflow-x-auto rounded-lg border">
-        <Table>
+        <Table className="text-xs [&_input]:text-sm">
           <TableHeader>
             <TableRow>
               <TableHead>Day</TableHead>
@@ -651,7 +651,7 @@ export function WeeklyTracker() {
           <TableBody>
             {DAYS.map((day) => (
               <TableRow key={day}>
-                <TableCell className="font-medium p-2">
+                <TableCell className="font-medium">
                   <span className="sm:hidden">{DAY_NAMES_SHORT[day]}</span>
                   <span className="hidden sm:inline">{day}</span>
                 </TableCell>
@@ -675,7 +675,7 @@ export function WeeklyTracker() {
               {FIELDS.map((f) => (
                 <TableCell
                   key={f}
-                  className={`text-center font-bold tabular-nums max-sm:p-0 ${FIELD_GRADIENT_BG[f] ?? CATEGORY_STYLES[FIELD_CATEGORY[f]].bg}`}
+                  className={`text-center font-bold tabular-nums ${FIELD_GRADIENT_BG[f] ?? CATEGORY_STYLES[FIELD_CATEGORY[f]].bg}`}
                 >
                   {totals[f] > 0 ? totals[f] : "—"}
                 </TableCell>
