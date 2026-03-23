@@ -78,6 +78,16 @@ const RATES: Record<Field, number> = {
 
 const MAX_CATEGORY_POINTS = 20;
 
+// Per-field maximums (in units, not points)
+const FIELD_MAX: Record<Field, number> = {
+  running: Infinity,
+  biking: 40,
+  sessionHrs: 2,
+  heavy: Infinity,
+  light: 200,
+  mobility: Infinity,
+};
+
 // Fields that must be whole numbers (reps)
 const INTEGER_FIELDS = new Set<Field>(["heavy", "light"]);
 
@@ -130,14 +140,20 @@ function calcCategory(
   name: string,
   fields: Field[]
 ): CategoryCalc {
-  const items = fields.map((field) => ({
-    field,
-    label: fieldLabel(field),
-    value: totals[field],
-    points: Math.min(totals[field] * RATES[field], MAX_CATEGORY_POINTS),
-  }));
+  const items = fields.map((field) => {
+    const clamped = Math.min(totals[field], FIELD_MAX[field]);
+    return {
+      field,
+      label: fieldLabel(field),
+      value: totals[field],
+      points: Math.min(clamped * RATES[field], MAX_CATEGORY_POINTS),
+    };
+  });
 
-  const rawTotal = fields.reduce((sum, f) => sum + totals[f] * RATES[f], 0);
+  const rawTotal = fields.reduce(
+    (sum, f) => sum + Math.min(totals[f], FIELD_MAX[f]) * RATES[f],
+    0
+  );
   const total = Math.min(rawTotal, MAX_CATEGORY_POINTS);
   const remaining = Math.max(MAX_CATEGORY_POINTS - total, 0);
 
@@ -154,10 +170,13 @@ function calcPrimaryValue(
 ): number {
   const secondaryPoints = fields
     .filter((f) => f !== primaryField)
-    .reduce((sum, f) => sum + (parseFloat(secondaryValues[f]) || 0) * RATES[f], 0);
+    .reduce((sum, f) => {
+      const val = Math.min(parseFloat(secondaryValues[f]) || 0, FIELD_MAX[f]);
+      return sum + val * RATES[f];
+    }, 0);
 
   const pointsLeft = Math.max(remaining - secondaryPoints, 0);
-  const raw = pointsLeft / RATES[primaryField];
+  const raw = Math.min(pointsLeft / RATES[primaryField], FIELD_MAX[primaryField]);
   return INTEGER_FIELDS.has(primaryField)
     ? Math.ceil(raw)
     : Math.round(raw * 100) / 100;
