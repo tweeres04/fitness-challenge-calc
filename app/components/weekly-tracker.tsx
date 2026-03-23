@@ -309,7 +309,7 @@ function SuggestionBlock({
               )}
             </span>
             {maxedOut ? (
-              <Popover>
+              <Popover key="maxed">
                 <PopoverTrigger className="w-20 text-center tabular-nums h-7 flex items-center justify-center text-foreground/50 cursor-help">
                   0
                 </PopoverTrigger>
@@ -319,12 +319,14 @@ function SuggestionBlock({
               </Popover>
             ) : (
               <Popover
+                key="clamp"
                 open={clampedField === f}
                 onOpenChange={(open) => {
                   if (!open) setClampedField(null);
                 }}
               >
                 <PopoverTrigger
+                  nativeButton={false}
                   render={
                     <Input
                       type="number"
@@ -354,7 +356,7 @@ function SuggestionBlock({
                   }
                 />
                 <PopoverContent side="top" className="w-auto px-3 py-2 text-xs">
-                  Clamped to {headroom}{" "}
+                  Reduced to {headroom}{" "}
                   {FIELD_UNITS[f] || (headroom === 1 ? "rep" : "reps")}{" "}
                   remaining
                 </PopoverContent>
