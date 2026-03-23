@@ -1,0 +1,16 @@
+{
+  "name": "Fitness Challenge Calculator",
+  "short_name": "Fitness Calc",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f4",
+  "theme_color": "#f5f5f4",
+  "icons": [
+    {
+      "src": "/dumbbell.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
