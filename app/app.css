@@ -151,3 +151,61 @@ body {
     @apply font-sans;
   }
 }
+
+/* Gradient transitions between category columns in the table.
+   --tint-opacity controls header (100%) vs body (30%) intensity.
+   Light/dark handled by the category color aliases switching at 50/950. */
+
+:root {
+  --cat-cardio: var(--color-cardio-50);
+  --cat-strength: var(--color-strength-50);
+  --cat-mobility: var(--color-mobility-50);
+}
+.dark {
+  --cat-cardio: var(--color-cardio-950);
+  --cat-strength: var(--color-strength-950);
+  --cat-mobility: var(--color-mobility-950);
+}
+
+/* Midpoint colors between adjacent categories */
+:root, .dark {
+  --mid-cardio-strength: color-mix(in oklch, var(--cat-cardio) 50%, var(--cat-strength));
+  --mid-strength-mobility: color-mix(in oklch, var(--cat-strength) 50%, var(--cat-mobility));
+}
+
+/* Tint function: apply opacity for body cells */
+.bg-gradient-cardio-start-header,
+.bg-gradient-cardio-end-header,
+.bg-gradient-strength-start-header,
+.bg-gradient-strength-end-header,
+.bg-gradient-mobility-start-header { --tint-opacity: 100%; }
+
+.bg-gradient-cardio-start-body,
+.bg-gradient-cardio-end-body,
+.bg-gradient-strength-start-body,
+.bg-gradient-strength-end-body,
+.bg-gradient-mobility-start-body { --tint-opacity: 30%; }
+
+/* Start cells: fade in from left edge (0-10%) */
+.bg-gradient-cardio-start-header,
+.bg-gradient-cardio-start-body {
+  background: linear-gradient(to right, transparent 0%, color-mix(in oklch, var(--cat-cardio) var(--tint-opacity), transparent) 10%);
+}
+.bg-gradient-strength-start-header,
+.bg-gradient-strength-start-body {
+  background: linear-gradient(to right, color-mix(in oklch, var(--mid-cardio-strength) var(--tint-opacity), transparent) 0%, color-mix(in oklch, var(--cat-strength) var(--tint-opacity), transparent) 10%);
+}
+.bg-gradient-mobility-start-header,
+.bg-gradient-mobility-start-body {
+  background: linear-gradient(to right, color-mix(in oklch, var(--mid-strength-mobility) var(--tint-opacity), transparent) 0%, color-mix(in oklch, var(--cat-mobility) var(--tint-opacity), transparent) 10%);
+}
+
+/* End cells: fade out at right edge (90-100%) */
+.bg-gradient-cardio-end-header,
+.bg-gradient-cardio-end-body {
+  background: linear-gradient(to right, color-mix(in oklch, var(--cat-cardio) var(--tint-opacity), transparent) 90%, color-mix(in oklch, var(--mid-cardio-strength) var(--tint-opacity), transparent) 100%);
+}
+.bg-gradient-strength-end-header,
+.bg-gradient-strength-end-body {
+  background: linear-gradient(to right, color-mix(in oklch, var(--cat-strength) var(--tint-opacity), transparent) 90%, color-mix(in oklch, var(--mid-strength-mobility) var(--tint-opacity), transparent) 100%);
+}

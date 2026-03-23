@@ -135,6 +135,23 @@ const FIELD_CATEGORY: Record<Field, CategoryColor> = {
   mobility: "mobility",
 };
 
+// Gradient overrides for transition columns (header and body cells)
+const FIELD_GRADIENT_HEADER: Partial<Record<Field, string>> = {
+  running: "bg-gradient-cardio-start-header",
+  sessionHrs: "bg-gradient-cardio-end-header",
+  heavy: "bg-gradient-strength-start-header",
+  light: "bg-gradient-strength-end-header",
+  mobility: "bg-gradient-mobility-start-header",
+};
+
+const FIELD_GRADIENT_BG: Partial<Record<Field, string>> = {
+  running: "bg-gradient-cardio-start-body",
+  sessionHrs: "bg-gradient-cardio-end-body",
+  heavy: "bg-gradient-strength-start-body",
+  light: "bg-gradient-strength-end-body",
+  mobility: "bg-gradient-mobility-start-body",
+};
+
 type CategoryCalc = {
   name: string;
   fields: { field: Field; label: string; value: number; points: number }[];
@@ -508,7 +525,7 @@ export function WeeklyTracker() {
               {FIELDS.map((f) => (
                 <TableHead
                   key={f}
-                  className={`text-center ${CATEGORY_STYLES[FIELD_CATEGORY[f]].headerBg}`}
+                  className={`text-center ${FIELD_GRADIENT_HEADER[f] ?? CATEGORY_STYLES[FIELD_CATEGORY[f]].headerBg}`}
                 >
                   {fieldLabel(f)}
                 </TableHead>
@@ -520,7 +537,7 @@ export function WeeklyTracker() {
               <TableRow key={day}>
                 <TableCell className="font-medium">{day}</TableCell>
                 {FIELDS.map((field) => (
-                  <TableCell key={field} className={`text-center ${CATEGORY_STYLES[FIELD_CATEGORY[field]].bg}`}>
+                  <TableCell key={field} className={`text-center ${FIELD_GRADIENT_BG[field] ?? CATEGORY_STYLES[FIELD_CATEGORY[field]].bg}`}>
                     <NumberInput
                       value={days[day][field]}
                       onChange={(v) => updateDay(day, field, v)}
@@ -534,7 +551,7 @@ export function WeeklyTracker() {
             <TableRow>
               <TableCell className="font-bold">Total</TableCell>
               {FIELDS.map((f) => (
-                <TableCell key={f} className={`text-center font-bold tabular-nums ${CATEGORY_STYLES[FIELD_CATEGORY[f]].bg}`}>
+                <TableCell key={f} className={`text-center font-bold tabular-nums ${FIELD_GRADIENT_BG[f] ?? CATEGORY_STYLES[FIELD_CATEGORY[f]].bg}`}>
                   {totals[f] > 0 ? totals[f] : "—"}
                 </TableCell>
               ))}
