@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Moon, Sun, Monitor } from "lucide-react";
+import { Moon, Sun, SunMoon } from "lucide-react";
 import { Button } from "~/components/ui/button";
 
 type Theme = "light" | "dark" | "system";
@@ -52,7 +52,7 @@ export function ThemeToggle() {
     });
   }
 
-  const Icon = theme === "light" ? Sun : theme === "dark" ? Moon : Monitor;
+  const Icon = theme === "light" ? Sun : theme === "dark" ? Moon : SunMoon;
 
   const label = theme === "light" ? "Light" : theme === "dark" ? "Dark" : "System";
 
