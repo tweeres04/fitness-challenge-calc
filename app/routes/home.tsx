@@ -19,7 +19,7 @@ export default function Home() {
         <WeeklyTracker />
       </div>
       <footer className="py-6 text-center text-sm text-foreground/40">
-        <p>By <a href="https://tweeres.ca" className="underline hover:text-foreground/60">Tyler Weeres</a></p>
+        <p>Calculator by <a href="https://tweeres.ca" className="underline hover:text-foreground/60">Tyler Weeres</a>, fitness challenge by Conrad Newell</p>
         <p>
           <a
             href="https://www.flaticon.com/free-icons/fitness"
