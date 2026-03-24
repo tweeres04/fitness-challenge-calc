@@ -90,6 +90,14 @@ function fieldLabel(f: Field): string {
     : FIELD_NAMES[f];
 }
 
+function fieldDescription(f: Field): string {
+  const rate = RATES[f];
+  const unit = FIELD_UNITS[f] || "rep";
+  const max = FIELD_MAX[f];
+  if (max === Infinity) return `${rate} pts/${unit}`;
+  return `${rate} pts/${unit}, max ${max}`;
+}
+
 type DayData = Record<Field, string>;
 
 const emptyDay = (): DayData =>
@@ -642,8 +650,20 @@ export function WeeklyTracker() {
                   key={f}
                   className={`text-center ${FIELD_GRADIENT_HEADER[f] ?? CATEGORY_STYLES[FIELD_CATEGORY[f]].headerBg}`}
                 >
-                  <span className="sm:hidden">{FIELD_NAMES_SHORT[f]}</span>
-                  <span className="hidden sm:inline">{fieldLabel(f)}</span>
+                  <Popover>
+                    <PopoverTrigger
+                      render={
+                        <button className="cursor-help">
+                          <span className="sm:hidden">{FIELD_NAMES_SHORT[f]}</span>
+                          <span className="hidden sm:inline">{fieldLabel(f)}</span>
+                        </button>
+                      }
+                    />
+                    <PopoverContent side="bottom" className="w-auto px-3 py-2 text-xs">
+                      <p className="font-semibold">{fieldLabel(f)}</p>
+                      <p>{fieldDescription(f)}</p>
+                    </PopoverContent>
+                  </Popover>
                 </TableHead>
               ))}
             </TableRow>
