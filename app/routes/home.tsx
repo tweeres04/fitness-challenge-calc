@@ -12,6 +12,7 @@ export function meta() {
   return [
     { title: "Fitness Challenge Calculator" },
     { name: "description", content: "Weekly fitness challenge calculator" },
+    { tagName: "link", rel: "manifest", href: "/manifest.json" },
   ];
 }
 

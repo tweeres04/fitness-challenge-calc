@@ -11,6 +11,11 @@ export function meta({ data }: Route.MetaArgs) {
   return [
     { title: `${data?.displayName ?? "Calculator"} | Fitness Challenge` },
     { name: "description", content: "Weekly fitness challenge calculator" },
+    {
+      tagName: "link",
+      rel: "manifest",
+      href: `/manifest.json?slug=${data?.slug ?? ""}`,
+    },
   ];
 }
 
