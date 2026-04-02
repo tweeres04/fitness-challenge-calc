@@ -1,43 +1,40 @@
+import { Link } from "react-router";
 import type { Route } from "./+types/home";
-import { WeeklyTracker } from "~/components/weekly-tracker";
+import { listConfigs } from "~/lib/config-loader.server";
+import { ThemeToggle } from "~/components/theme-toggle";
+import { PageLayout } from "~/components/page-layout";
 
-export function meta({}: Route.MetaArgs) {
+export function loader() {
+  return { configs: listConfigs() };
+}
+
+export function meta() {
   return [
     { title: "Fitness Challenge Calculator" },
-    {
-      name: "description",
-      content: "Weekly fitness challenge calculator",
-    },
+    { name: "description", content: "Weekly fitness challenge calculator" },
   ];
 }
 
-export default function Home() {
+export default function Home({ loaderData }: Route.ComponentProps) {
   return (
-    <div className="flex min-h-screen flex-col bg-stone-50 dark:bg-background">
-      <div className="mx-auto w-full md:max-w-4xl flex-1 px-4 py-8">
-        <WeeklyTracker />
+    <PageLayout>
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Fitness challenges</h1>
+          <ThemeToggle />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {loaderData.configs.map((c) => (
+            <Link
+              key={c.slug}
+              to={`/${c.slug}`}
+              className="block rounded-lg border p-6 hover:bg-accent transition-colors"
+            >
+              <h2 className="text-lg font-semibold">{c.displayName}</h2>
+            </Link>
+          ))}
+        </div>
       </div>
-      <footer className="py-6 text-center text-sm text-foreground/40">
-        <p>
-          Calculator by{" "}
-          <a
-            href="https://tweeres.ca"
-            className="underline hover:text-foreground/60"
-          >
-            Tyler Weeres
-          </a>
-          , fitness challenge by Conrad Newell
-        </p>
-        <p>
-          <a
-            href="https://www.flaticon.com/free-icons/fitness"
-            title="fitness icons"
-            className="underline hover:text-foreground/60"
-          >
-            Fitness icons created by juicy_fish - Flaticon
-          </a>
-        </p>
-      </footer>
-    </div>
+    </PageLayout>
   );
 }

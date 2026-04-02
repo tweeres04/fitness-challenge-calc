@@ -1,0 +1,46 @@
+slug: conrad
+displayName: Conrad's Challenge
+maxCategoryPoints: 20
+categories:
+  - name: Cardio
+    color: cardio
+    fields:
+      - key: running
+        name: Running
+        shortName: Run
+        unit: km
+        rate: 2
+      - key: biking
+        name: Biking
+        shortName: Bike
+        unit: km
+        rate: 0.25
+        max: 40
+      - key: sessionHrs
+        name: Session
+        shortName: Sess
+        unit: hr
+        rate: 2
+        max: 2
+  - name: Strength
+    color: strength
+    fields:
+      - key: heavy
+        name: Heavy reps
+        shortName: Heavy
+        rate: 0.1
+        integer: true
+      - key: light
+        name: Light reps
+        shortName: Light
+        rate: 0.05
+        max: 200
+        integer: true
+  - name: Mobility
+    color: mobility
+    fields:
+      - key: mobility
+        name: Mobility
+        shortName: Mob
+        unit: min
+        rate: 0.25
